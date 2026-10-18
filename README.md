@@ -61,7 +61,37 @@ All commands are run from the repository root unless stated otherwise.
 
 ### Part B: Logic synthesis with Yosys
 
-_To be filled in._
+Run inside the IIC-OSIC-TOOLS container (Yosys 0.70, Icarus Verilog 14.0, `PDK=sky130A`), from
+`/foss/designs/RTL_to_GDS_assignment`.
+
+4. Synthesize to `sky130_fd_sc_hd` cells (writes `synth/mult_array_stat.rpt` and `synth/mult_array_netlist.v`):
+   ```bash
+   yosys -c synth/synth.tcl
+   ```
+
+5. Gate-level simulation of the synthesized netlist with the same testbench:
+   ```bash
+   CELLS=$PDK_ROOT/sky130A/libs.ref/sky130_fd_sc_hd/verilog
+   iverilog -g2012 -DFUNCTIONAL -DUNIT_DELAY=#1 -o gls \
+     tb/tb_mult.v $CELLS/primitives.v $CELLS/sky130_fd_sc_hd.v synth/mult_array_netlist.v
+   vvp gls
+   ```
+   Output:
+   ```
+   PASS: 256 vectors checked, 0 errors
+   ```
+
+Part B results (from `synth/mult_array_stat.rpt`):
+
+| Metric | Value |
+|--------|-------|
+| Total number of cells | 67 |
+| Number of flip-flops | 16 (`sky130_fd_sc_hd__dfrtp_1`) |
+| Total cell area (µm²) | 784.502 |
+| Flip-flop area (µm²) | 16 × 25.024 = 400.384 |
+| Flip-flop area (% of total) | 51.04 % |
+| 3 most-used cell types | `dfrtp_1` (16), `nand2_1` (9), `xnor2_1` (7) |
+| Netlist simulation result | `PASS: 256 vectors checked, 0 errors` |
 
 ### Part C: Static timing analysis with OpenSTA
 
