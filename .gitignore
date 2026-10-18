@@ -1,0 +1,4 @@
+sim
+gls
+*.vcd
+pnr/runs/
