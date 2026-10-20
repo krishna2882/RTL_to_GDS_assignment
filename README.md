@@ -151,10 +151,62 @@ about 2N = 8 full-adder delays.
 
 ### Part D: Physical design with LibreLane
 
-_To be filled in._
+Run inside the IIC-OSIC-TOOLS container (LibreLane 3.1.0.dev3, Classic flow). The first CLOCK_PERIOD was
+1.2 × Tmin = 1.2 × 2.98 = 3.576 ns, rounded up to the next 0.5 ns = 4.0 ns.
+
+9. Run the flow (repeated for every attempt below, after editing `CLOCK_PERIOD` in `pnr/config.json`):
+   ```bash
+   cd pnr
+   librelane config.json
+   ```
+
+10. Copy the final results of the passing run into `pnr/`:
+    ```bash
+    cp runs/RUN_2026-10-19_21-33-21/final/metrics.json metrics.json
+    cp runs/RUN_2026-10-19_21-33-21/final/gds/mult_array.gds mult_array.gds
+    ```
+
+11. View the layout:
+    ```bash
+    klayout mult_array.gds
+    ```
 
 #### LibreLane attempts
 
-| Run | CLOCK_PERIOD (ns) | Setup slack (ns) | DRC errors | LVS errors | Result |
-|-----|-------------------|------------------|------------|------------|--------|
-| | | | | | |
+LibreLane signs off setup timing in every process corner. Each failing run was in the slow corners
+(`ss_100C_1v60`); the typical corner (`tt_025C_1v80`) passed in every run.
+
+| Run | Run folder | CLOCK_PERIOD (ns) | Setup slack, worst corner (ns) | Setup slack, tt corner (ns) | DRC errors | LVS errors | Result |
+|-----|------------|-------------------|--------------------------------|-----------------------------|------------|------------|--------|
+| 1 | RUN_2026-10-19_21-18-57 | 4.0 | −1.953 | 0.883 | 0 | 0 | Fail: setup violations in ss corners |
+| 2 | RUN_2026-10-19_21-22-09 | 4.5 | −1.453 | 1.383 | 0 | 0 | Fail: setup violations in ss corners |
+| 3 | RUN_2026-10-19_21-24-25 | 5.0 | −0.953 | 1.883 | 0 | 0 | Fail: setup violations in ss corners |
+| 4 | RUN_2026-10-19_21-26-41 | 5.5 | −0.456 | 2.382 | 0 | 0 | Fail: setup violations in ss corners |
+| 5 | RUN_2026-10-19_21-28-57 | 6.0 | −0.128 | 2.818 | 0 | 0 | Fail: setup violations in ss corners |
+| 6 | RUN_2026-10-19_21-31-11 | 6.5 | −0.157 | 3.089 | 0 | 0 | Fail: setup violations in ss corners |
+| 7 | RUN_2026-10-19_21-33-21 | 7.0 | +0.089 | 3.528 | 0 | 0 | **Pass** (final run) |
+
+DRC = Magic, KLayout and router DRC (all 0 in every run). Runs 6 and 7 inserted fewer setup-repair buffers
+(13 in runs 1–4, 11 in run 5, 2 in run 6, 1 in run 7), so the slow-corner path got slower as the period grew,
+which is why run 6 was slightly worse than run 5.
+
+Part D results (from `pnr/metrics.json` of run 7):
+
+| Metric | Value |
+|--------|-------|
+| CLOCK_PERIOD used (ns) | 7.0 |
+| Number of runs needed | 7 |
+| Core area (µm²) | 17759.5 (die area 22500 = 150 × 150) |
+| Cells after synthesis (from Part B) | 67 |
+| Cells after place and route | 1901 (`design__instance__count`) |
+| Kinds of cells added | decap (1305: `decap_3/4/6/8/12`), fill (260: `fill_1/2`), tap (245: `tapvpwrvgnd_1`), buffers (20: `buf_2` ×17, `buf_4` ×1, `clkdlybuf4s50_1` ×2), clock-tree buffers (3: `clkbuf_16`) |
+| Wirelength (µm) | 2348 (`route__wirelength`) |
+| Setup slack (ns) | 0.089 (worst corner `max_ss_100C_1v60`; 3.528 in `nom_tt_025C_1v80`) |
+| Post-route Fmax (MHz) | 1000 / (7.0 − 0.089) = 144.70 |
+| Fmax from Part C (MHz) | 335.57 |
+| DRC errors | 0 (Magic 0, KLayout 0, router 0) |
+| LVS errors | 0 |
+
+The 1901 cells are 16 flip-flops + 52 logic cells (LibreLane runs its own synthesis) + the 1833 added cells
+listed above. The run also reports 11 max-slew warnings in the slow corner; they are warnings, not errors,
+and the flow completed.
