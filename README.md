@@ -154,21 +154,24 @@ about 2N = 8 full-adder delays.
 Run inside the IIC-OSIC-TOOLS container (LibreLane 3.1.0.dev3, Classic flow). The first CLOCK_PERIOD was
 1.2 × Tmin = 1.2 × 2.98 = 3.576 ns, rounded up to the next 0.5 ns = 4.0 ns.
 
-9. Run the flow (repeated for every attempt below, after editing `CLOCK_PERIOD` in `pnr/config.json`):
+> **Note on working directory:** Commands 9, 10, and 11 are executed inside the `pnr/` directory.
+
+9. Enter `pnr/` and run the flow (repeated for every attempt below, after editing `CLOCK_PERIOD` in `config.json`):
    ```bash
    cd pnr
    librelane config.json
    ```
 
-10. Copy the final results of the passing run into `pnr/`:
+10. Copy the final results of the passing run into `pnr/` (run from within `pnr/`):
     ```bash
     cp runs/RUN_2026-10-19_21-33-21/final/metrics.json metrics.json
     cp runs/RUN_2026-10-19_21-33-21/final/gds/mult_array.gds mult_array.gds
     ```
 
-11. View the layout:
+11. View the layout in KLayout (from within `pnr/`), then return to repository root:
     ```bash
     klayout mult_array.gds
+    cd ..
     ```
 
 #### LibreLane attempts
